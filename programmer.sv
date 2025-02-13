@@ -35,13 +35,15 @@ module programmer (
     output wire DLLFILT,
     output wire DLL_EN,
     output wire DLL_FB_EN,
-    output wire DLL_TR,
+    output wire DLL_FINE_TUNE,
+    output wire [4:0] DLL_DAC,
+    output wire CLK_OUT_SEL,
     output wire DRESET,
     output wire HO
 );
 
-  `define NUM_REGS 20
-  `define NUM_BITS 98
+  `define NUM_REGS 22
+  `define NUM_BITS 104
 
   logic [`NUM_BITS-1:0] prog_data;
 
@@ -66,7 +68,9 @@ module programmer (
   assign DLLFILT = prog_data[94];
   assign DLL_EN = prog_data[95];
   assign DLL_FB_EN = prog_data[96];
-  assign DLL_TR = prog_data[97];
+  assign DLL_FINE_TUNE = prog_data[97];
+  assign DLL_DAC = prog_data[102:98];
+  assign CLK_OUT_SEL = prog_data[103];
 
   // Populate input prog_data_aux with SCLK
 

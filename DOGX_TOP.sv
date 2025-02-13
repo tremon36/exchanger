@@ -2,7 +2,6 @@
 module DOGX_TOP (
 
     input wire CLK_24M,  // CLK from DLL
-    input wire reset,    // Reset only used for simulation, leave connected to 1
 
     input wire SCLK,  // CLK for programming port
     input wire SDI,   // Serial data for programming port
@@ -29,8 +28,10 @@ module DOGX_TOP (
     output logic       DLLFILT,
     output logic       DLL_EN,
     output logic       DLL_FB_EN,
-    output logic       DLL_TR,
+    output logic [5:0] DLL_DAC_FULL,
+    output logic       CLK_OUT_SEL,
     output logic       HO,
+    output logic       dll_reset,
 
     output logic [10:0] converter_output,  // Digital output
     output wire clock_3M_out
@@ -47,6 +48,8 @@ module DOGX_TOP (
   logic [4:0] ATO;
 
   logic DRESET;
+  assign dll_reset = DRESET;
+
   logic [23:0] HSNR_COMP_P;
   logic [23:0] HSNR_COMP_N;
   logic OP_MODE;
@@ -75,7 +78,9 @@ module DOGX_TOP (
       .DLLFILT(DLLFILT),
       .DLL_EN(DLL_EN),
       .DLL_FB_EN(DLL_FB_EN),
-      .DLL_TR(DLL_TR),
+      .DLL_FINE_TUNE(DLL_DAC_FULL[5]),
+      .DLL_DAC(DLL_DAC_FULL[4:0]),
+      .CLK_OUT_SEL(CLK_OUT_SEL),
       .DRESET(DRESET),
       .HO(HO)
   );

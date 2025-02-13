@@ -52,11 +52,13 @@ input_text = """
     output wire REF_OUT,
     output wire [23:0] HSNR_COMP_P,
     output wire [23:0] HSNR_COMP_N,
-    output wire operation_mode,
+    output wire OP_MODE,
     output wire DLLFILT,
     output wire DLL_EN,
     output wire DLL_FB_EN,
-    output wire DLL_TR
+    output wire DLL_FINE_TUNE,
+    output wire [4:0] DLL_DAC,
+    output wire CLK_OUT_SEL,
 
 """
 
