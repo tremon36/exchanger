@@ -3,8 +3,8 @@
 
 module dc_filter (
     input wire reset,
-    input wire CLK_24M,
-    input wire enable_3M,
+    input wire CLK_3M,
+    input wire enable,
     input wire [8:0] c_data,
     output logic [`N_DECIMALS+8:0] filter_out
 );
@@ -19,12 +19,12 @@ module dc_filter (
   logic signed [`N_DECIMALS+8:0] e_shifted;
   logic signed [`N_DECIMALS+8:0] g;
 
-  always_ff @(posedge CLK_24M or negedge reset) begin
+  always_ff @(posedge CLK_3M) begin
     if (!reset) begin
       b <= 0;
       e <= 0;
     end else begin
-      if (enable_3M) begin
+      if (enable) begin
         b <= c_data;
         e <= d;
       end

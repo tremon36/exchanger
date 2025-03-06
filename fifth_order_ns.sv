@@ -3,18 +3,18 @@
 module fifth_order_ns #(
     parameter int NR_SIG_PATH_BITS = 21
 ) (
-    input wire CLK_24M,
-    input wire enable_3M,
+    input wire CLK_3M,
     input wire reset,
+    input logic enable,
     input logic alpha,
     input logic signed [23:0] HSNR_offset_gain_pos,
     input logic signed [23:0] HSNR_offset_gain_neg,
-    input logic signed [10:0] data_i,
+    input logic signed [22:0] data_i,
     output logic data_o
 );
-    // DEBUG
+  // DEBUG
 
-    /*    int samples_count = 0;
+  /* int samples_count = 0;
 
         int fd_integrator1;
         int fd_integrator2;
@@ -29,7 +29,7 @@ module fifth_order_ns #(
             fd_integrator4 = $fopen("./vivado_integrator4.csv","w");
             fd_integrator5 = $fopen("./vivado_integrator5.csv","w");
             forever begin
-                @(negedge enable_3M);
+                @(negedge CLK_3M);
                 samples_count++;
                 #1;
                 $fdisplay(fd_integrator1,"%d;",first_integrator_r);
@@ -38,9 +38,9 @@ module fifth_order_ns #(
                 $fdisplay(fd_integrator4,"%d;",fourth_integrator_r);
                 $fdisplay(fd_integrator5,"%d;",fifth_integrator_r);
             end
-        end
-*/
-    // END DEBUG
+        end*/
+
+  // END DEBUG
 
   // local parameters
 
@@ -64,7 +64,7 @@ module fifth_order_ns #(
   // Extension to 23 bit
 
   logic signed [NR_SIG_PATH_BITS+2:0] data_in_extended;
-  assign data_in_extended = data_i << 12;
+  assign data_in_extended = data_i;
 
 
   // First feedback
@@ -79,20 +79,21 @@ module fifth_order_ns #(
   logic signed [NR_SIG_PATH_BITS+2:0] first_integrator_r;
   logic signed [NR_SIG_PATH_BITS+3:0] sum02_r;
 
+
   assign sum02_r = sum1_r + first_integrator_r;
 
-  always_ff @(posedge CLK_24M or negedge reset) begin
+  always_ff @(posedge CLK_3M or negedge reset) begin
     if (!reset) begin
       first_integrator_r <= 0;
     end else begin
-      if (enable_3M) begin
-        if (sum02_r > $signed(SAT_01_UPPER_LIMIT)) begin
+      if (enable) begin
+        if (first_integrator_r > $signed(SAT_01_UPPER_LIMIT)) begin
           first_integrator_r <= $signed(SAT_01_UPPER_LIMIT);
-          //$display("Saturation at integrator 1 (upper limit) happened at %d, when value was %d",samples_count,sum02_r);
+          // $display("Saturation at integrator 1 (upper limit) happened at %d, when value was %d",samples_count,sum02_r);
         end else begin
-          if (sum02_r < $signed(SAT_01_LOWER_LIMIT)) begin
+          if (first_integrator_r < $signed(SAT_01_LOWER_LIMIT)) begin
             first_integrator_r <= $signed(SAT_01_LOWER_LIMIT);
-           // $display("Saturation at integrator 1 (lower limit) happened at %d, when value was %d",samples_count,sum02_r);
+            // $display("Saturation at integrator 1 (lower limit) happened at %d, when value was %d",samples_count,sum02_r);
           end else begin
             first_integrator_r <= sum02_r;
           end
@@ -115,18 +116,18 @@ module fifth_order_ns #(
 
   assign sum04_r = sum03_r + second_integrator_r;
 
-  always_ff @(posedge CLK_24M or negedge reset) begin
+  always_ff @(posedge CLK_3M or negedge reset) begin
     if (!reset) begin
       second_integrator_r <= 0;
     end else begin
-      if (enable_3M) begin
+      if (enable) begin
         if (sum04_r > $signed(SAT_02_UPPER_LIMIT)) begin
           second_integrator_r <= $signed(SAT_02_UPPER_LIMIT);
-          //$display("Saturation at integrator 2 (upper limit) happened at %d, when value was %d",samples_count,sum04_r);
+          // $display("Saturation at integrator 2 (upper limit) happened at %d, when value was %d",samples_count,sum04_r);
         end else begin
           if (sum04_r < $signed(SAT_02_LOWER_LIMIT)) begin
             second_integrator_r <= $signed(SAT_02_LOWER_LIMIT);
-            //$display("Saturation at integrator 2 (lower limit) happened at %d, when value was %d",samples_count,sum04_r);
+            // $display("Saturation at integrator 2 (lower limit) happened at %d, when value was %d",samples_count,sum04_r);
           end else begin
             second_integrator_r <= sum04_r;
           end
@@ -142,17 +143,17 @@ module fifth_order_ns #(
 
   assign sum05_r = second_integrator_r + third_integrator_r;
 
-  always_ff @(posedge CLK_24M or negedge reset) begin
+  always_ff @(posedge CLK_3M or negedge reset) begin
     if (!reset) begin
       third_integrator_r <= 0;
     end else begin
-      if (enable_3M) begin
+      if (enable) begin
         if (sum05_r > $signed(SAT_03_UPPER_LIMIT)) begin
-          //$display("Saturation at integrator 3 (upper limit) happened at %d, when value was %d",samples_count,sum05_r);
+          // $display("Saturation at integrator 3 (upper limit) happened at %d, when value was %d",samples_count,sum05_r);
           third_integrator_r <= $signed(SAT_03_UPPER_LIMIT);
         end else begin
           if (sum05_r < $signed(SAT_03_LOWER_LIMIT)) begin
-           // $display("Saturation at integrator 3 (lower limit) happened at %d, when value was %d",samples_count,sum05_r);
+            // $display("Saturation at integrator 3 (lower limit) happened at %d, when value was %d",samples_count,sum05_r);
             third_integrator_r <= $signed(SAT_03_LOWER_LIMIT);
           end else begin
             third_integrator_r <= sum05_r;
@@ -173,10 +174,10 @@ module fifth_order_ns #(
   always_comb begin
     if (sum08_r > $signed(SAT_04_UPPER_LIMIT)) begin
       fourth_integrator_r = $signed(SAT_04_UPPER_LIMIT);
-      //$display("Saturation at integrator 4 (upper limit) happened at %d, when value was %d",samples_count,sum08_r);
+      // $display("Saturation at integrator 4 (upper limit) happened at %d, when value was %d",samples_count,sum08_r);
     end else begin
       if (sum08_r < $signed(SAT_04_LOWER_LIMIT)) begin
-        //$display("Saturation at integrator 4 (lower limit) happened at %d, when value was %d",samples_count,sum08_r);
+        // $display("Saturation at integrator 4 (lower limit) happened at %d, when value was %d",samples_count,sum08_r);
         fourth_integrator_r = $signed(SAT_04_LOWER_LIMIT);
       end else begin
         fourth_integrator_r = sum08_r;
@@ -184,13 +185,13 @@ module fifth_order_ns #(
     end
   end
 
-  always_ff @(posedge CLK_24M or negedge reset) begin
-    if(!reset) begin
-        backwards_delay_register <= 0;
+  always_ff @(posedge CLK_3M or negedge reset) begin
+    if (!reset) begin
+      backwards_delay_register <= 0;
     end else begin
-        if(enable_3M) begin
-            backwards_delay_register <= fourth_integrator_r;
-        end
+      if (enable) begin
+        backwards_delay_register <= fourth_integrator_r;
+      end
     end
   end
 
@@ -201,18 +202,18 @@ module fifth_order_ns #(
 
   assign sum09_r = fourth_integrator_r + fifth_integrator_r;
 
-  always_ff @(posedge CLK_24M or negedge reset) begin
+  always_ff @(posedge CLK_3M or negedge reset) begin
     if (!reset) begin
       fifth_integrator_r <= 0;
     end else begin
-      if (enable_3M) begin
+      if (enable) begin
         if (sum09_r > $signed(SAT_05_UPPER_LIMIT)) begin
           fifth_integrator_r <= $signed(SAT_05_UPPER_LIMIT);
-          //$display("Saturation at integrator 5 (upper limit) happened at %d, when value was %d",samples_count,sum09_r);
+          // $display("Saturation at integrator 5 (upper limit) happened at %d, when value was %d",samples_count,sum09_r);
         end else begin
           if (sum09_r < $signed(SAT_05_LOWER_LIMIT)) begin
             fifth_integrator_r <= $signed(SAT_05_LOWER_LIMIT);
-            //$display("Saturation at integrator 5 (lower limit) happened at %d, when value was %d",samples_count,sum09_r);
+            // $display("Saturation at integrator 5 (lower limit) happened at %d, when value was %d",samples_count,sum09_r);
           end else begin
             fifth_integrator_r <= sum09_r;
           end
@@ -243,7 +244,7 @@ module fifth_order_ns #(
   // Compute feedback
 
   always_comb begin
-    if (alpha == 1'b0) begin
+    if (alpha == `ALPHA_SELECT_HSNR) begin
       if (data_o == 1'b1) begin
         sum1_fb = HSNR_offset_gain_neg;
       end else begin
@@ -257,9 +258,6 @@ module fifth_order_ns #(
       end
     end
   end
-
-
-
 
 
 endmodule

@@ -1,5 +1,5 @@
 module resistors_decoder (
-    input logic [3:0] r_prog,
+    input logic [4:0] r_prog,
     output logic [7:0] R_ctr
 );
 
@@ -21,6 +21,7 @@ module resistors_decoder (
         13: R_ctr = 8'b01011011;  //   2.30k       13.5k
         14: R_ctr = 8'b11011011;  //   2.40k       14.0k
         15: R_ctr = 8'b10111011;  //   2.50k       14.5k
+        default:  R_ctr = 8'b11111111; // OFF
       endcase
   end
 endmodule
